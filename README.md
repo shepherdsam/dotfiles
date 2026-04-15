@@ -4,9 +4,22 @@ Setting up my favorite terminal invironment for development
 ## Install
 
 ### zsh
-This should already be installed but ensure 
-- [ ] All of my standard options, configs, aliases should be in a separate file that I just simply load from the main .zshrc file.
 
+#### Oh-My-ZSH
+```
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+```
+
+Modifications to `.zshrc`
+```zsh
+ZSH_THEME="nicoulaj"
+ZSH_CUSTOM=~/.config/zsh
+```
+
+Copy Config
+```
+cp dotfiles/zsh ~/.config/zsh
+```
 
 ### alacritty
 ```
@@ -58,7 +71,7 @@ brew install --cask font-jetbrains-mono-nerd-font
 
 ### git
 ```
-brew install --cask font-jetbrains-mono-nerd-font
+brew install --cask git
 ```
 
 ### nvim
@@ -113,4 +126,7 @@ M.base46 = {
 
 return M
 ```
+
+### Goose
+- [ ] Fill this out
 
