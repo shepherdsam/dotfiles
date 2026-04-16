@@ -13,12 +13,12 @@ sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/too
 Modifications to `.zshrc`
 ```zsh
 ZSH_THEME="nicoulaj"
-ZSH_CUSTOM=~/.config/zsh
+ZSH_CUSTOM="$HOME/.config/zsh"
 ```
 
 Copy Config
 ```
-cp dotfiles/zsh ~/.config/zsh
+cp -R zsh ~/.config/
 ```
 
 ### alacritty
@@ -62,7 +62,10 @@ family = "JetBrainsMono Nerd Font Mono"
 style = "Bold Italic"
 ```
 
-
+### neovim
+```
+brew install --cask neovim
+```
 
 ### Nerd Font
 ```
