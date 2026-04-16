@@ -21,6 +21,11 @@ Copy Config
 cp -R zsh ~/.config/
 ```
 
+### Nerd Font
+```
+brew install --cask font-jetbrains-mono-nerd-font
+```
+
 ### alacritty
 ```
 brew install --cask alacritty
@@ -62,19 +67,19 @@ family = "JetBrainsMono Nerd Font Mono"
 style = "Bold Italic"
 ```
 
-### neovim
-```
-brew install --cask neovim
-```
-
-### Nerd Font
-```
-brew install --cask font-jetbrains-mono-nerd-font
-```
-
 ### git
 ```
 brew install --cask git
+```
+
+Edit `~/.gitconfig`
+```
+editor = nvim
+```
+
+### neovim
+```
+brew install --cask neovim
 ```
 
 ### nvim
