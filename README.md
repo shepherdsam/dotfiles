@@ -136,20 +136,34 @@ return M
 ```
 
 #### Options
+- [x] Show Nvdash on initial start up when no buffer
 
 Edit: `nvim/lua/options.lua`
 
 ```lua
-vim.api.nvim_create_autocmd("BufDelete", {
+
+vim.opt.linebreak = true
+vim.opt.wrap = true
+vim.opt.breakindent = true
+
+vim.api.nvim_create_autocmd({"VimEnter", "BufDelete"}, {
   callback = function()
     local bufs = vim.t.bufs
-    if #bufs == 1 and vim.api.nvim_buf_get_name(bufs[1]) == "" then
-      vim.cmd "Nvdash"
+    if #bufs == 1 then
+      local buf = bufs[1]
+      local name = vim.api.nvim_buf_get_name(buf)
+      local ft = vim.bo[buf].filetype
+      if name == "" or ft == "netrw" or vim.fn.isdirectory(name) == 1 then
+        vim.cmd "Nvdash"
+      end
     end
   end,
 })
 ```
 
 ### Goose
-- [ ] Fill this out
+```
+brew install --cask block-goose-cli
+brew install --cask block-goose
+```
 
