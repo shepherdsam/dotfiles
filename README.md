@@ -105,7 +105,7 @@ return {
 
   {
     "nvim-tree/nvim-tree.lua",
-    -- lazy = false
+    lazy = false -- turning this on ensures the working directory changes
   },
 
   {
@@ -166,4 +166,10 @@ vim.api.nvim_create_autocmd({"VimEnter", "BufDelete"}, {
 brew install --cask block-goose-cli
 brew install --cask block-goose
 ```
+
+### ollama
+Local models
+- [ ] Research which models work best for my hardware I do have at home.
+
+
 
