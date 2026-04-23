@@ -4,6 +4,7 @@ Setting up my favorite terminal invironment for development
 ## Install
 
 ### zsh
+This should come default with osx.
 
 #### Oh-My-ZSH
 ```
@@ -162,6 +163,7 @@ vim.api.nvim_create_autocmd({"VimEnter", "BufDelete"}, {
 ```
 
 ### Goose
+- [ ] Might be removing
 ```
 brew install --cask block-goose-cli
 brew install --cask block-goose
@@ -171,5 +173,74 @@ brew install --cask block-goose
 Local models
 - [ ] Research which models work best for my hardware I do have at home.
 
+### Pi
+My new favorite
+```
+# TODO: Will be changing locations in the near future
+npm install -g @mariozechner/pi-coding-agent
+```
 
+Edit `~/.pi/agent/auth.json`
 
+```
+{
+  "xai": {"type": "api_key", "key": "xai-KEY"}
+}
+
+```
+
+Edit `~/.pi/agent/settings.json`
+```
+{
+  "defaultProvider": "xai",
+  "defaultModel": "grok-4-1-fast",
+  "defaultThinkingLevel": "minimal",
+  "hideThinkingBlock": false,
+  "enableInstallTelemetry": false,
+  "theme": "dark",
+  "enabledModels": [
+    "xai/grok-4-1-fast",
+    "xai/grok-4-1-fast-non-reasoning",
+    "xai/grok-4.20-0309-non-reasoning",
+    "xai/grok-4.20-0309-reasoning",
+    "xai/grok-code-fast-1"
+  ]
+}
+
+```
+
+### Tmux
+```
+brew install tmux
+```
+
+Edit `~/.tmux.conf`
+
+```
+# Tmux configuration
+# Change prefix key to Ctrl+a (common setup)
+
+# Unbind default prefix (C-b)
+unbind C-b
+
+# Set new prefix to C-a
+set -g prefix C-a
+
+# Bind C-a to send C-a to inner programs (e.g., nested tmux/screen)
+bind C-a send-prefix
+
+# Reload config with prefix + r
+bind r source-file ~/.tmux.conf \; display "Reloaded tmux.conf!"
+
+# Enable mouse (optional, modern default)
+set -g mouse on
+
+# Pi Recommendations
+set -g extended-keys on
+set -g extended-keys-format csi-u
+```
+
+### Handy
+```
+brew install --cask handy
+```
