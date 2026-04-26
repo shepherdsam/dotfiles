@@ -126,13 +126,6 @@ vim.api.nvim_create_autocmd({"VimEnter", "BufDelete"}, {
 })
 ```
 
-### Goose
-- [ ] Might be removing
-```
-brew install --cask block-goose-cli
-brew install --cask block-goose
-```
-
 ### ollama
 Local models
 - [ ] Research which models work best for my hardware I do have at home.
@@ -151,7 +144,6 @@ cp ./pi/agent/settings.json ~/.pi/agent/settings.json
 
 See `./pi/agent/auth.json` for Auth
 See `./pi/agent/settings.json` for Settings
-
 
 ### Tmux
 ```
