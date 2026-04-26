@@ -23,3 +23,19 @@ alias editconfig="nvim ~/.config"
 
 alias pullzshconfig="cp -R ./zsh ~/.config/"
 alias pushzshconfig="cp -R ~/.config/zsh ."
+
+# tmux helpers
+alias tls='tmux ls'
+alias ta='tmux attach -t'
+alias tn='tmux new -s'          # e.g. tn work
+alias tk='tmux kill-session -t' # e.g. tk old-session
+alias tkillall='tmux kill-server' # nuclear option
+
+# Auto tmux
+if [[ -z "$TMUX" ]]; then
+  if tmux has-session 2>/dev/null; then
+    tmux attach
+  else
+    tmux new-session -s main
+  fi
+fi

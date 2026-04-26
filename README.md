@@ -217,31 +217,7 @@ Edit `~/.pi/agent/settings.json`
 brew install tmux
 ```
 
-Edit `~/.tmux.conf`
-
-```
-# Tmux configuration
-# Change prefix key to Ctrl+a (common setup)
-
-# Unbind default prefix (C-b)
-unbind C-b
-
-# Set new prefix to C-a
-set -g prefix C-a
-
-# Bind C-a to send C-a to inner programs (e.g., nested tmux/screen)
-bind C-a send-prefix
-
-# Reload config with prefix + r
-bind r source-file ~/.tmux.conf \; display "Reloaded tmux.conf!"
-
-# Enable mouse (optional, modern default)
-set -g mouse on
-
-# Pi Recommendations
-set -g extended-keys on
-set -g extended-keys-format csi-u
-```
+Copy `cp ./.tmux.conf ~/.tmux.conf`
 
 ### Handy
 Dictation
