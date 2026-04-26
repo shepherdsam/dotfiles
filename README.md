@@ -178,13 +178,16 @@ My new favorite
 ```
 # TODO: Will be changing locations in the near future
 npm install -g @mariozechner/pi-coding-agent
+# TODO: This is a heavy extenion. I would like to just find my favorite models and simply hard code them in models.json.
+pi install npm:pi-venice
 ```
 
 Edit `~/.pi/agent/auth.json`
 
 ```
 {
-  "xai": {"type": "api_key", "key": "xai-KEY"}
+  "xai": {"type": "api_key", "key": "xai-KEY"},
+  "venice": {"type": "api_key", "key": "venice-KEY"}
 }
 
 ```
@@ -241,6 +244,7 @@ set -g extended-keys-format csi-u
 ```
 
 ### Handy
+Dictation
 ```
 brew install --cask handy
 ```
