@@ -135,6 +135,7 @@ My new favorite
 ```
 # TODO: Will be changing locations in the near future
 npm install -g @mariozechner/pi-coding-agent
+
 # TODO: This is a heavy extenion. I would like to just find my favorite models and simply hard code them in models.json.
 pi install npm:pi-venice
 
@@ -148,9 +149,10 @@ See `./pi/agent/settings.json` for Settings
 ### Tmux
 ```
 brew install tmux
+cp ./.tmux.conf ~/.tmux.conf
 ```
 
-Copy `cp ./.tmux.conf ~/.tmux.conf`
+See `./.tmux.conf`
 
 ### Handy
 Dictation
