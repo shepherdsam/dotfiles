@@ -1,0 +1,13 @@
+[user]
+	name = Sam Shepherd
+	email = hello@shepherdsam.me
+
+[commit]
+  verbose = true
+
+[diff]
+    algorithm = histogram
+    colorMoved = zebra
+
+[color]
+    ui = auto

@@ -73,10 +73,7 @@ style = "Bold Italic"
 brew install --cask git
 ```
 
-Edit `~/.gitconfig`
-```
-editor = nvim
-```
+Copy `cp ./.gitconfig ~/.gitconfig`
 
 ### neovim
 ```
