@@ -1,0 +1,29 @@
+# Window settings
+[window]
+padding.x = 4
+padding.y = 4
+dynamic_padding = true
+decorations = 'buttonless'
+opacity = 0.9
+#blur = true
+
+
+# Font configuration
+[font]
+size = 14.0
+
+[font.normal]
+family = "JetBrainsMono Nerd Font Mono"
+style = "Regular"
+
+[font.bold]
+family = "JetBrainsMono Nerd Font Mono"
+style = "Bold"
+
+[font.italic]
+family = "JetBrainsMono Nerd Font Mono"
+style = "Italic"
+
+[font.bold_italic]
+family = "JetBrainsMono Nerd Font Mono"
+style = "Bold Italic"

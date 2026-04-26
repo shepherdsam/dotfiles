@@ -30,43 +30,9 @@ brew install --cask font-jetbrains-mono-nerd-font
 ### alacritty
 ```
 brew install --cask alacritty
-mkdir -p ~/.config/alacritty
-touch ~/.config/alacritty/alacritty.toml
+cp ./alacritty ~/.config/
 ```
-
-Edit `~/.config/alacritty/alacritty.toml`
-
-```toml
-# Window settings
-[window]
-padding.x = 4
-padding.y = 4
-dynamic_padding = true
-decorations = 'buttonless'
-opacity = 0.85
-#blur = true
-
-
-# Font configuration
-[font]
-size = 14.0
-
-[font.normal]
-family = "JetBrainsMono Nerd Font Mono"
-style = "Regular"
-
-[font.bold]
-family = "JetBrainsMono Nerd Font Mono"
-style = "Bold"
-
-[font.italic]
-family = "JetBrainsMono Nerd Font Mono"
-style = "Italic"
-
-[font.bold_italic]
-family = "JetBrainsMono Nerd Font Mono"
-style = "Bold Italic"
-```
+See `./alacritty/alacritty.toml`
 
 ### git
 ```
