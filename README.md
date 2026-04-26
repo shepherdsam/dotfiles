@@ -37,9 +37,10 @@ See `./alacritty/alacritty.toml`
 ### git
 ```
 brew install --cask git
+cp ./.gitconfig ~/.gitconfig
 ```
 
-Copy `cp ./.gitconfig ~/.gitconfig`
+See `./.gitconfig`
 
 ### neovim
 ```
@@ -143,37 +144,14 @@ My new favorite
 npm install -g @mariozechner/pi-coding-agent
 # TODO: This is a heavy extenion. I would like to just find my favorite models and simply hard code them in models.json.
 pi install npm:pi-venice
+
+cp ./pi/agent/auth.json ~/.pi/agent/auth.json
+cp ./pi/agent/settings.json ~/.pi/agent/settings.json
 ```
 
-Edit `~/.pi/agent/auth.json`
+See `./pi/agent/auth.json` for Auth
+See `./pi/agent/settings.json` for Settings
 
-```
-{
-  "xai": {"type": "api_key", "key": "xai-KEY"},
-  "venice": {"type": "api_key", "key": "venice-KEY"}
-}
-
-```
-
-Edit `~/.pi/agent/settings.json`
-```
-{
-  "defaultProvider": "xai",
-  "defaultModel": "grok-4-1-fast",
-  "defaultThinkingLevel": "minimal",
-  "hideThinkingBlock": false,
-  "enableInstallTelemetry": false,
-  "theme": "dark",
-  "enabledModels": [
-    "xai/grok-4-1-fast",
-    "xai/grok-4-1-fast-non-reasoning",
-    "xai/grok-4.20-0309-non-reasoning",
-    "xai/grok-4.20-0309-reasoning",
-    "xai/grok-code-fast-1"
-  ]
-}
-
-```
 
 ### Tmux
 ```
@@ -187,3 +165,10 @@ Dictation
 ```
 brew install --cask handy
 ```
+
+## Syncing
+- [ ] This needs to get better
+
+### Review Hunk Copy
+`nvim -d src dst`
+Move to the dest (right side) and run `do` to pull changes over and then save

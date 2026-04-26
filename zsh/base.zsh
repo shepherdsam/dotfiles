@@ -3,11 +3,6 @@ alias editzsh="nvim ~/.zshrc"
 alias ohmyzsh="nvim ~/.oh-my-zsh"
 alias reloadzsh="source ~/.zshrc"
 
-# goose
-# TODO: Might be removing
-eval "$(goose completion zsh)"
-export GOOSE_SANDBOX=true
-
 # nvim
 # Preferred editor for local and remote sessions
 if [[ -n $SSH_CONNECTION ]]; then

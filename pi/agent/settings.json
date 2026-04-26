@@ -1,0 +1,14 @@
+{
+  "defaultProvider": "xai",
+  "defaultModel": "grok-4-1-fast",
+  "defaultThinkingLevel": "low",
+  "hideThinkingBlock": false,
+  "enableInstallTelemetry": false,
+  "enabledModels": [
+    "xai/grok-4-1-fast",
+    "xai/grok-4-1-fast-non-reasoning",
+    "xai/grok-4.20-0309-non-reasoning",
+    "xai/grok-4.20-0309-reasoning",
+    "xai/grok-code-fast-1"
+  ]
+}
