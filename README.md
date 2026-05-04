@@ -43,17 +43,16 @@ cp ./.gitconfig ~/.gitconfig
 See `./.gitconfig`
 
 ### neovim
-```
+```bash
 brew install --cask neovim
 ```
 
-### nvim
-- [ ] I want a markdown preview
+- [ ] I want a markdown preview https://github.com/roodolv/markdown-toggle.nvim#default-settings
 - [ ] I want an ability to toggle and check off check boxes (todos)
 - [ ] It should not wrap in the middle of a word. Should it wrap at all?
 
 #### Install NvChad
-```
+```bash
 git clone https://github.com/NvChad/starter ~/.config/nvim && nvim
 
 ```
@@ -146,8 +145,15 @@ cp ./pi/agent/settings.json ~/.pi/agent/settings.json
 See `./pi/agent/auth.json` for Auth
 See `./pi/agent/settings.json` for Settings
 
-### Tmux
+### Utilities
+- fd (better find)
+- rg (better grep)
+```bash
+brew install ripgrep fd
 ```
+
+### Tmux
+```bash
 brew install tmux
 cp ./.tmux.conf ~/.tmux.conf
 ```
