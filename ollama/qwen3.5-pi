@@ -1,0 +1,11 @@
+FROM qwen3.5:9b-q8_0
+
+# Coding/agent-optimized parameters (widely recommended for Qwen 3.5 in agents)
+PARAMETER temperature 0.5
+PARAMETER top_p 0.92
+PARAMETER top_k 35
+PARAMETER presence_penalty 0.6
+PARAMETER frequency_penalty 0.3
+PARAMETER repeat_penalty 1.08
+PARAMETER num_ctx 65536
+PARAMETER num_predict -1

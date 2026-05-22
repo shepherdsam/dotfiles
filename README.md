@@ -128,6 +128,16 @@ vim.api.nvim_create_autocmd({"VimEnter", "BufDelete"}, {
 ### ollama
 Local models
 - [ ] Research which models work best for my hardware I do have at home.
+```bash
+brew install ollama
+```
+
+#### Models
+Trying the following for M2
+- quen3.5:9b
+- qwen3.6:27b
+- qwen3.6:27b-coding-nvfp4 (not working because of a bug. wait for fix)
+- qwen3.6:27b-coding-mxfp8 (might be too big)
 
 ### Pi
 My new favorite
