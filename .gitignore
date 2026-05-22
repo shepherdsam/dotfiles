@@ -1,0 +1,28 @@
+# General
+*.log
+*.bak
+*~
+.DS_Store
+
+# Caches
+**/cache/
+**/Cache/
+**/caches/
+**/tmp/
+**/temp/
+
+# Large or binary files
+**/*.png
+**/*.jpg
+**/*.jpeg
+**/*.gif
+**/*.ico
+**/*.db
+**/*.sqlite*
+
+# Sensitive stuff
+**/credentials*
+**/tokens*
+**/secrets*
+**/key*
+**/password*
