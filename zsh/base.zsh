@@ -4,7 +4,7 @@ alias ohmyzsh="nvim ~/.oh-my-zsh"
 alias reloadzsh="source ~/.zshrc"
 
 # vim mode
-bindkey -v
+# bindkey -v # DOT NOT WORK - instead add vi-mode to list of plugins in `~/.zshrc`
 
 # nvim
 # Preferred editor for local and remote sessions
