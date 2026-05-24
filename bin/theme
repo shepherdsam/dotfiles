@@ -1,0 +1,224 @@
+#!/usr/bin/env zsh
+# bin/theme - Light / Dark / Auto theme switcher for Alacritty + Tmux + Neovim
+# Part of https://github.com/samshepherd/dev-dotfiles (themeswitcher worktree)
+#
+# Usage:
+#   theme              # status
+#   theme dark         # force dark (one_dark / onedark)
+#   theme light        # force light (one_light / one_light)
+#   theme auto         # follow macOS appearance (defaults read -g AppleInterfaceStyle)
+#   theme toggle       # flip current
+#   theme status       # show what each app is using
+#   theme -h | --help
+
+set -euo pipefail
+
+# --- Config paths (always target the live ~/.config versions) ---
+ALAC="$HOME/.config/alacritty/alacritty.toml"
+TMUXC="$HOME/.config/tmux/tmux.conf"
+NVIMC="$HOME/.config/nvim/lua/chadrc.lua"
+
+# --- Colors (zsh) ---
+autoload -U colors && colors
+GREEN="%F{green}"
+YELLOW="%F{yellow}"
+RED="%F{red}"
+CYAN="%F{cyan}"
+RESET="%f"
+
+printc() { print -P -- "$1${RESET}"; }
+
+usage() {
+  print -P -- "${CYAN}theme${RESET} - switch terminal color scheme (light/dark) across Alacritty, Tmux, Neovim"
+  print -P -- ""
+  print -P -- "Usage:"
+  print -P -- "  ${CYAN}theme${RESET}              Show current status for all three apps"
+  print -P -- "  ${CYAN}theme dark${RESET}         Switch to dark (one_dark + onedark)"
+  print -P -- "  ${CYAN}theme light${RESET}        Switch to light (one_light + one_light)"
+  print -P -- "  ${CYAN}theme auto${RESET}         Follow macOS system appearance"
+  print -P -- "  ${CYAN}theme toggle${RESET}       Flip between dark and light"
+  print -P -- "  ${CYAN}theme status${RESET}       Same as running with no arguments"
+  print -P -- "  ${CYAN}theme -h, --help${RESET}   This help"
+  print -P -- ""
+  print -P -- "After changing, Alacritty reloads automatically."
+  print -P -- "Tmux is sourced by the script. Neovim picks up the new chadrc on restart"
+  print -P -- "or via ${CYAN}:lua require('base46').toggle_theme()${RESET} (the theme_toggle pair is kept in sync)."
+}
+
+# --- Detect current theme by inspecting Alacritty (primary source of truth) ---
+current() {
+  if [[ ! -f "$ALAC" ]]; then
+    echo "unknown"
+    return
+  fi
+  # Ignore commented lines; the active import contains the current theme file
+  if grep -v '^#' "$ALAC" | grep -q 'one_dark.toml'; then
+    echo "dark"
+  elif grep -v '^#' "$ALAC" | grep -q 'one_light.toml'; then
+    echo "light"
+  else
+    echo "unknown"
+  fi
+}
+
+# --- macOS appearance ---
+detect_appearance() {
+  local style
+  style=$(defaults read -g AppleInterfaceStyle 2>/dev/null || echo "Light")
+  if [[ "$style" == "Dark" ]]; then
+    echo "dark"
+  else
+    echo "light"
+  fi
+}
+
+# --- Apply the three sed edits for a given mode ---
+apply() {
+  local mode="$1"   # dark or light
+
+  if [[ "$mode" == "dark" ]]; then
+    # Alacritty
+    sed -i '' 's|  "./themes/one_.*.toml"|  "./themes/one_dark.toml"|' "$ALAC"
+    # Tmux
+    sed -i '' 's|source-file ~/.config/tmux/one_.*.conf|source-file ~/.config/tmux/one_dark.conf|' "$TMUXC"
+    # Neovim (normalize indent to 2 spaces; live file may use tab or spaces)
+    sed -E -i '' 's/^[[:space:]]*theme = "one[^"]*",*/  theme = "onedark",/' "$NVIMC"
+  else
+    sed -i '' 's|  "./themes/one_.*.toml"|  "./themes/one_light.toml"|' "$ALAC"
+    sed -i '' 's|source-file ~/.config/tmux/one_.*.conf|source-file ~/.config/tmux/one_light.conf|' "$TMUXC"
+    sed -E -i '' 's/^[[:space:]]*theme = "one[^"]*",*/  theme = "one_light",/' "$NVIMC"
+  fi
+}
+
+reload() {
+  printc "${YELLOW}Reloading...${RESET}"
+
+  # Tmux (safe if no server running)
+  if tmux source-file "$TMUXC" 2>/dev/null; then
+    printc "${GREEN}  tmux:${RESET} config reloaded"
+  else
+    printc "${YELLOW}  tmux:${RESET} no server running (will pick up on next attach)"
+  fi
+
+  # Alacritty watches the file
+  printc "${GREEN}  alacritty:${RESET} will pick up change automatically (new windows or existing)"
+
+  # Neovim
+  printc "${YELLOW}  nvim:${RESET} restart Neovim or run ${CYAN}:lua require('base46').toggle_theme()${RESET} inside running instances"
+  printc "${YELLOW}        (theme_toggle in chadrc keeps the built-in toggle in sync)${RESET}"
+}
+
+status() {
+  local cur
+  cur=$(current)
+
+  printc "${CYAN}=== Theme Status ===${RESET}"
+  printc "  Overall (from Alacritty): ${GREEN}${cur}${RESET}"
+
+  # Alacritty detail
+  if [[ -f "$ALAC" ]]; then
+    local a
+    a=$(grep -v '^#' "$ALAC" | grep -o 'one_[^"]*.toml' | head -1 | sed 's/.toml//; s/_/ /')
+    printc "  Alacritty: ${a:-unknown}"
+  else
+    printc "  Alacritty: ${RED}config not found${RESET}"
+  fi
+
+  # Tmux detail
+  if [[ -f "$TMUXC" ]]; then
+    local t
+    t=$(grep 'source-file.*one_' "$TMUXC" | sed -E 's|.*/(one_[^/]+).conf.*|\1|; s/_/ /')
+    printc "  Tmux:      ${t:-unknown}"
+  else
+    printc "  Tmux:      ${RED}config not found${RESET}"
+  fi
+
+  # Nvim detail
+  if [[ -f "$NVIMC" ]]; then
+    local n
+    n=$(grep -E '^[[:space:]]*theme =' "$NVIMC" | head -1 | sed -E 's/.*theme = "([^"]+)".*/\1/')
+    printc "  Neovim:    ${n:-unknown}"
+  else
+    printc "  Neovim:    ${RED}chadrc not found${RESET}"
+  fi
+
+  # Drift warning (only active lines)
+  local t_dark t_light n_dark n_light
+  t_dark=$(grep -E '^\s*source-file' "$TMUXC" | grep -c 'one_dark.conf' 2>/dev/null || true)
+  t_light=$(grep -E '^\s*source-file' "$TMUXC" | grep -c 'one_light.conf' 2>/dev/null || true)
+  n_dark=$(grep -E '^\s*theme =' "$NVIMC" | grep -c 'onedark' 2>/dev/null || true)
+  n_light=$(grep -E '^\s*theme =' "$NVIMC" | grep -c 'one_light' 2>/dev/null || true)
+
+  # Drift check using [ ] (more forgiving with command-sub "0"/"1" strings)
+  local drift=0
+  if [[ "$cur" == "dark" ]]; then
+    [ "$t_light" -gt 0 ] && drift=1
+    [ "$n_light" -gt 0 ] && drift=1
+  elif [[ "$cur" == "light" ]]; then
+    [ "$t_dark" -gt 0 ] && drift=1
+    [ "$n_dark" -gt 0 ] && drift=1
+  fi
+  if [ "$drift" -eq 1 ]; then
+    printc "${RED}  WARNING: drift detected between apps!${RESET} Run ${CYAN}theme $cur${RESET} to force consistency."
+  fi
+  echo
+}
+
+# --- Main dispatcher ---
+main() {
+  local cmd="${1:-status}"
+
+  case "$cmd" in
+    -h|--help)
+      usage
+      ;;
+    status|"")
+      status
+      ;;
+    dark)
+      printc "${CYAN}Switching to DARK...${RESET}"
+      apply dark
+      reload
+      status
+      ;;
+    light)
+      printc "${CYAN}Switching to LIGHT...${RESET}"
+      apply light
+      reload
+      status
+      ;;
+    auto)
+      local target
+      target=$(detect_appearance)
+      printc "${CYAN}AUTO: macOS reports ${target}${RESET}"
+      if [[ "$(current)" == "$target" ]]; then
+        printc "${GREEN}Already on ${target}. Nothing to do.${RESET}"
+        status
+        return
+      fi
+      apply "$target"
+      reload
+      status
+      ;;
+    toggle)
+      local cur
+      cur=$(current)
+      if [[ "$cur" == "dark" ]]; then
+        printc "${CYAN}TOGGLE: dark → light${RESET}"
+        apply light
+      else
+        printc "${CYAN}TOGGLE: light → dark${RESET}"
+        apply dark
+      fi
+      reload
+      status
+      ;;
+    *)
+      printc "${RED}Unknown command: $cmd${RESET}"
+      usage
+      exit 1
+      ;;
+  esac
+}
+
+main "$@"

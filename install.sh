@@ -59,5 +59,16 @@ link "$DOTFILES_DIR/.zshrc" "$HOME/.zshrc"
 # Add more as needed:
 # link "$DOTFILES_DIR/.bashrc" "$HOME/.bashrc"
 
+# Symlink executables from bin/ (theme switcher, etc.)
+if [ -d "$DOTFILES_DIR/bin" ]; then
+    mkdir -p "$HOME/bin"
+    shopt -s nullglob
+    for script in "$DOTFILES_DIR"/bin/*; do
+        if [ -f "$script" ] && [ -x "$script" ]; then
+            link "$script" "$HOME/bin/$(basename "$script")"
+        fi
+    done
+fi
+
 echo "Dotfiles installation completed!"
 echo "You may want to restart your terminal or run: source ~/.zshrc"

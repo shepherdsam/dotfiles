@@ -37,3 +37,7 @@ if [[ -z "$TMUX" ]]; then
     tmux new-session -s main
   fi
 fi
+
+# Theme switcher convenience aliases (provided by ~/bin/theme after install)
+alias dark='theme dark'
+alias light='theme light'

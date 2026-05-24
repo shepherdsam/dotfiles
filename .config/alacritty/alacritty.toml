@@ -29,7 +29,11 @@ family = "JetBrainsMono Nerd Font Mono"
 style = "Bold Italic"
 
 [general]
+# import = [
+#   "./themes/one_dark.toml"
+# ]
+
 import = [
-  "./themes/one_light.toml"
+  "./themes/one_dark.toml"
 ]
 

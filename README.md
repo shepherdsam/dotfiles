@@ -176,6 +176,41 @@ Dictation
 brew install --cask handy
 ```
 
+## Theme Switcher
+
+A single `theme` command (symlinked to `~/bin/theme` by `install.sh`) switches light/dark across your whole terminal setup:
+
+- Alacritty (terminal colors)
+- Tmux (status bar, panes, messages)
+- Neovim / NvChad (editor UI via base46)
+
+### Usage (after `./install.sh`)
+
+```sh
+theme              # show status for all three
+theme dark
+theme light
+theme auto         # follow macOS system appearance (AppleInterfaceStyle)
+theme toggle
+theme --help
+```
+
+Convenience aliases are also available (from `.config/zsh/base.zsh`):
+
+```sh
+dark
+light
+```
+
+### How it works
+- Edits the live `~/.config/...` files (symlinks into this repo when installed).
+- Alacritty auto-reloads on file change.
+- Tmux is sourced automatically by the script.
+- Neovim: restart or run `:lua require('base46').toggle_theme()` inside Nvim. The `theme_toggle` entry in `chadrc.lua` keeps the built-in NvChad toggle in sync with the external command.
+- `theme auto` queries `defaults read -g AppleInterfaceStyle`.
+
+See `bin/theme` for the implementation and `theme status` for drift detection between the three apps.
+
 ## Syncing
 - [ ] This needs to get better
 
