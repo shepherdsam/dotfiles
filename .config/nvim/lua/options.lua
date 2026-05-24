@@ -27,3 +27,11 @@ vim.filetype.add({
   },
 })
 
+vim.api.nvim_create_user_command("ThemeToggle", function()
+  require("base46").toggle_theme()
+end, { desc = "Toggle between the two themes defined in chadrc.lua" })
+
+vim.api.nvim_create_user_command("TransparencyToggle", function()
+  require("base46").toggle_transparency()
+end, { desc = "Toggle background transparency" })
+

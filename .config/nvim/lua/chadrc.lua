@@ -5,31 +5,17 @@
 ---@type ChadrcConfig
 local M = {}
 
--- LIGHT --
--- M.base46 = {
---   transparency = true,
---
--- 	theme = "onedark",
--- 	hl_override = {
--- 	   gitcommitComment = {
--- 	     fg = "#a9a9aa",
--- 	     italic = true
--- 	   },
--- 	},
--- }
-
--- DARK --
 M.base46 = {
   transparency = true,
 
   theme = "onedark",
   theme_toggle = { "onedark", "one_light" },
-  -- hl_override = {
-  --    gitcommitComment = {
-  --      fg = "#a9a9aa",
-  --      italic = true
-  --    },
-  -- },
+  hl_override = {
+     gitcommitComment = {
+       fg = "#a9a9aa",
+       italic = true
+     },
+  },
 }
 
 -- M.nvdash = { load_on_startup = true }
