@@ -3,6 +3,8 @@ alias editzsh="nvim ~/.zshrc"
 alias ohmyzsh="nvim ~/.oh-my-zsh"
 alias reloadzsh="source ~/.zshrc"
 
+alias editconfig="nvim ~/.config"
+
 # vim mode
 # bindkey -v # DOT NOT WORK - instead add vi-mode to list of plugins in `~/.zshrc`
 
@@ -17,10 +19,6 @@ else
 fi
  
 alias nv="nvim"
-alias editconfig="nvim ~/.config"
-
-alias pullzshconfig="cp -R ./zsh ~/.config/"
-alias pushzshconfig="cp -R ~/.config/zsh ."
 
 # tmux helpers
 alias tls='tmux ls'
