@@ -16,7 +16,7 @@
   * Any file containing 'password', 'secret', 'token', 'key' in name
 * Before any file op: Double-check path against this list. If unsure, ask user or skip.
 * In bash: Avoid `cat`, `grep` on potential secrets; use `--no-sensitive` flag if custom.
-* Report blocked attempts: &quot;Blocked: Sensitive path access denied for security.&quot;
+* Report blocked attempts: "Blocked: Sensitive path access denied for security."
 
 ## Tools
 - **CRITICAL**: NEVER use sed/cat to read a file or a range of a file. Always use the read tool.
