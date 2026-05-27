@@ -1,11 +1,11 @@
 #!/usr/bin/env zsh
-# bin/theme - Light / Dark / Auto theme switcher for Alacritty + Tmux + Neovim
-# Part of https://github.com/samshepherd/dev-dotfiles (themeswitcher worktree)
+# bin/theme - Light / Dark / Auto theme switcher for Ghostty + Alacritty + Tmux + Neovim
+# Part of https://github.com/samshepherd/dev-dotfiles
 #
 # Usage:
 #   theme              # status
-#   theme dark         # force dark (one_dark / onedark)
-#   theme light        # force light (one_light / one_light)
+#   theme dark         # force dark (one_dark)
+#   theme light        # force light (one_light)
 #   theme auto         # follow macOS appearance (defaults read -g AppleInterfaceStyle)
 #   theme toggle       # flip current
 #   theme status       # show what each app is using
@@ -15,6 +15,7 @@ set -euo pipefail
 
 # --- Config paths (always target the live ~/.config versions) ---
 ALAC="$HOME/.config/alacritty/alacritty.toml"
+GHOSTTYC="$HOME/.config/ghostty/config"
 TMUXC="$HOME/.config/tmux/tmux.conf"
 NVIMC="$HOME/.config/nvim/lua/chadrc.lua"
 
@@ -29,10 +30,10 @@ RESET="%f"
 printc() { print -P -- "$1${RESET}"; }
 
 usage() {
-  print -P -- "${CYAN}theme${RESET} - switch terminal color scheme (light/dark) across Alacritty, Tmux, Neovim"
+  print -P -- "${CYAN}theme${RESET} - switch terminal color scheme (light/dark) across Ghostty, Alacritty, Tmux, Neovim"
   print -P -- ""
   print -P -- "Usage:"
-  print -P -- "  ${CYAN}theme${RESET}              Show current status for all three apps"
+  print -P -- "  ${CYAN}theme${RESET}              Show current status for all apps"
   print -P -- "  ${CYAN}theme dark${RESET}         Switch to dark (one_dark + onedark)"
   print -P -- "  ${CYAN}theme light${RESET}        Switch to light (one_light + one_light)"
   print -P -- "  ${CYAN}theme auto${RESET}         Follow macOS system appearance"
@@ -40,21 +41,24 @@ usage() {
   print -P -- "  ${CYAN}theme status${RESET}       Same as running with no arguments"
   print -P -- "  ${CYAN}theme -h, --help${RESET}   This help"
   print -P -- ""
-  print -P -- "After changing, Alacritty reloads automatically."
+  print -P -- "After changing:"
+  print -P -- "  ${CYAN}Ghostty:${RESET}   press ${CYAN}super+shift+,${RESET} (or Command Palette → Reload Config)"
+  print -P -- "  ${CYAN}Alacritty:${RESET} auto-reloads on config change"
   print -P -- "Tmux is sourced by the script. Neovim picks up the new chadrc on restart"
   print -P -- "or via ${CYAN}:lua require('base46').toggle_theme()${RESET} (the theme_toggle pair is kept in sync)."
 }
 
-# --- Detect current theme by inspecting Alacritty (primary source of truth) ---
+# --- Detect current theme by inspecting Ghostty (primary source of truth) ---
+# Alacritty is kept in sync by apply(), but Ghostty is used for current()/toggle/auto decisions.
 current() {
-  if [[ ! -f "$ALAC" ]]; then
+  if [[ ! -f "$GHOSTTYC" ]]; then
     echo "unknown"
     return
   fi
-  # Ignore commented lines; the active import contains the current theme file
-  if grep -v '^#' "$ALAC" | grep -q 'one_dark.toml'; then
+  # Look for the active theme = line managed by this script
+  if grep -v '^#' "$GHOSTTYC" | grep -q '^theme = one_dark'; then
     echo "dark"
-  elif grep -v '^#' "$ALAC" | grep -q 'one_light.toml'; then
+  elif grep -v '^#' "$GHOSTTYC" | grep -q '^theme = one_light'; then
     echo "light"
   else
     echo "unknown"
@@ -72,20 +76,27 @@ detect_appearance() {
   fi
 }
 
-# --- Apply the three sed edits for a given mode ---
+# --- Apply the sed edits for a given mode (updates both terminals + tmux + nvim) ---
 apply() {
   local mode="$1"   # dark or light
 
   if [[ "$mode" == "dark" ]]; then
-    # Alacritty
+    # Ghostty
+    sed -i '' 's/^theme = one_.*$/theme = one_dark/' "$GHOSTTYC"
+    # Alacritty (kept for users who still run it)
     sed -i '' 's|  "./themes/one_.*.toml"|  "./themes/one_dark.toml"|' "$ALAC"
     # Tmux
     sed -i '' 's|source-file ~/.config/tmux/one_.*.conf|source-file ~/.config/tmux/one_dark.conf|' "$TMUXC"
     # Neovim (normalize indent to 2 spaces; live file may use tab or spaces)
     sed -E -i '' 's/^[[:space:]]*theme = "one[^"]*",*/  theme = "onedark",/' "$NVIMC"
   else
+    # Ghostty
+    sed -i '' 's/^theme = one_.*$/theme = one_light/' "$GHOSTTYC"
+    # Alacritty
     sed -i '' 's|  "./themes/one_.*.toml"|  "./themes/one_light.toml"|' "$ALAC"
+    # Tmux
     sed -i '' 's|source-file ~/.config/tmux/one_.*.conf|source-file ~/.config/tmux/one_light.conf|' "$TMUXC"
+    # Neovim (normalize indent to 2 spaces; live file may use tab or spaces)
     sed -E -i '' 's/^[[:space:]]*theme = "one[^"]*",*/  theme = "one_light",/' "$NVIMC"
   fi
 }
@@ -100,8 +111,9 @@ reload() {
     printc "${YELLOW}  tmux:${RESET} no server running (will pick up on next attach)"
   fi
 
-  # Alacritty watches the file
-  printc "${GREEN}  alacritty:${RESET} will pick up change automatically (new windows or existing)"
+  # Terminals
+  printc "${GREEN}  alacritty:${RESET} auto-reloads (new or existing windows)"
+  printc "${GREEN}  ghostty:${RESET}   press ${CYAN}super+shift+,${RESET} (or Command Palette → Reload Config)"
 
   # Neovim
   printc "${YELLOW}  nvim:${RESET} restart Neovim or run ${CYAN}:lua require('base46').toggle_theme()${RESET} inside running instances"
@@ -113,15 +125,24 @@ status() {
   cur=$(current)
 
   printc "${CYAN}=== Theme Status ===${RESET}"
-  printc "  Overall (from Alacritty): ${GREEN}${cur}${RESET}"
+  printc "  Overall (Ghostty primary): ${GREEN}${cur}${RESET}"
 
   # Alacritty detail
   if [[ -f "$ALAC" ]]; then
     local a
     a=$(grep -v '^#' "$ALAC" | grep -o 'one_[^"]*.toml' | head -1 | sed 's/.toml//; s/_/ /')
-    printc "  Alacritty: ${a:-unknown}"
+    printc "  Alacritty:  ${a:-unknown}"
   else
     printc "  Alacritty: ${RED}config not found${RESET}"
+  fi
+
+  # Ghostty detail
+  if [[ -f "$GHOSTTYC" ]]; then
+    local g
+    g=$(grep -v '^#' "$GHOSTTYC" | grep -o 'one_[^ ]*' | head -1 | sed 's/_/ /')
+    printc "  Ghostty:   ${g:-unknown}"
+  else
+    printc "  Ghostty:   ${RED}config not found${RESET}"
   fi
 
   # Tmux detail
@@ -143,7 +164,9 @@ status() {
   fi
 
   # Drift warning (only active lines)
-  local t_dark t_light n_dark n_light
+  local a_dark a_light t_dark t_light n_dark n_light
+  a_dark=$(grep -v '^#' "$ALAC" 2>/dev/null | grep -c 'one_dark.toml' 2>/dev/null || true)
+  a_light=$(grep -v '^#' "$ALAC" 2>/dev/null | grep -c 'one_light.toml' 2>/dev/null || true)
   t_dark=$(grep -E '^\s*source-file' "$TMUXC" | grep -c 'one_dark.conf' 2>/dev/null || true)
   t_light=$(grep -E '^\s*source-file' "$TMUXC" | grep -c 'one_light.conf' 2>/dev/null || true)
   n_dark=$(grep -E '^\s*theme =' "$NVIMC" | grep -c 'onedark' 2>/dev/null || true)
@@ -152,11 +175,13 @@ status() {
   # Drift check using [ ] (more forgiving with command-sub "0"/"1" strings)
   local drift=0
   if [[ "$cur" == "dark" ]]; then
-    [ "$t_light" -gt 0 ] && drift=1
-    [ "$n_light" -gt 0 ] && drift=1
+    [ "${a_light:-0}" -gt 0 ] && drift=1
+    [ "${t_light:-0}" -gt 0 ] && drift=1
+    [ "${n_light:-0}" -gt 0 ] && drift=1
   elif [[ "$cur" == "light" ]]; then
-    [ "$t_dark" -gt 0 ] && drift=1
-    [ "$n_dark" -gt 0 ] && drift=1
+    [ "${a_dark:-0}" -gt 0 ] && drift=1
+    [ "${t_dark:-0}" -gt 0 ] && drift=1
+    [ "${n_dark:-0}" -gt 0 ] && drift=1
   fi
   if [ "$drift" -eq 1 ]; then
     printc "${RED}  WARNING: drift detected between apps!${RESET} Run ${CYAN}theme $cur${RESET} to force consistency."

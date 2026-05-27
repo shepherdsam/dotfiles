@@ -26,3 +26,5 @@
 **/secrets*
 **/key*
 **/password*
+
+/.config/zsh/auth.zsh

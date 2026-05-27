@@ -7,3 +7,4 @@ auth.json
 mcp*.json
 models.json*
 settings.json
+venice-model-cache.json
