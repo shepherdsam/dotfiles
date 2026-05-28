@@ -9,13 +9,21 @@
  */
 
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import { createRequire } from "node:module";
 import { execSync } from "node:child_process";
 import path from "node:path";
 import fs from "node:fs";
 
-const PI_BIN = "/opt/homebrew/bin/pi";
 const OUTPUT_DIR = path.resolve(process.env.HOME || "~", "serv/static/public");
 const BASE_URL = "http://samshem2.tail5d98d.ts.net:3141";
+
+// Resolve the main entry, then derive the package root from it.
+// Can't use require.resolve(".../package.json") because the exports field
+// restricts accessible paths, causing Node to treat dist/index.js as a directory.
+const mainEntry = require.resolve("@earendil-works/pi-coding-agent");
+const pkgRoot = path.dirname(path.dirname(mainEntry));
+const pkgRequire = createRequire(path.join(pkgRoot, "dist", "index.js"));
+const { exportSessionToHtml } = pkgRequire("./core/export-html/index.js");
 
 export default function (pi: ExtensionAPI) {
   pi.registerCommand("exportsession", {
@@ -56,15 +64,20 @@ export default function (pi: ExtensionAPI) {
       try {
         ctx.ui.notify("Exporting session...", "info");
 
-        const result = await pi.exec(PI_BIN, ["--theme", "light", "--export", sessionFile, outputPath], {
-          signal: ctx.signal,
-          timeout: 30_000,
-        });
+        const state = {
+          systemPrompt: ctx.getSystemPrompt(),
+          tools: pi.getAllTools().map((t) => ({
+            name: t.name,
+            description: t.description,
+            parameters: t.parameters,
+          })),
+        };
 
-        if (result.code !== 0) {
-          ctx.ui.notify("Export failed (exit code " + result.code + "): " + (result.stderr || result.stdout), "error");
-          return;
-        }
+        await exportSessionToHtml(
+          ctx.sessionManager as any,
+          state as any,
+          { outputPath }
+        );
 
         // Copy URL to clipboard
         const url = BASE_URL + "/" + filename;
