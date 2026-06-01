@@ -162,6 +162,36 @@ cp ./pi/agent/settings.json ~/.pi/agent/settings.json
 See `./pi/agent/auth.json` for Auth
 See `./pi/agent/settings.json` for Settings
 
+
+#### Pi Packages
+```bash
+pi install npm:@xl0/pi-lovely-dev-tools
+pi install https://github.com/badlogic/pi-skills.git
+pi install git:https://github.com/badlogic/pi-diff-review
+```
+
+Add `.config/pi/agent/git/github.com/badlogic/pi-skills/package.json`
+```json
+{
+  "pi": {
+    "skills": ["brave-search"]
+  }
+}
+```
+TODO: Add package.json for pi-skills enabling the skills
+
+Settings For Venice
+```json
+  "pi-venice": {
+    "families": {
+      "enabled": [
+        "text"
+      ]
+    },
+    "tools": false
+  }
+```
+
 ### Utilities
 - fd (better find)
 - rg (better grep)
