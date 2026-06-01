@@ -15,7 +15,7 @@ import path from "node:path";
 import fs from "node:fs";
 
 const OUTPUT_DIR = path.resolve(process.env.HOME || "~", "serv/static/public");
-const BASE_URL = "http://samshem2.tail5d98d.ts.net:3141";
+const BASE_URL = (process.env.STATIC_URL || "http://localhost:3141").replace(/\/$/, "");
 
 // Resolve the main entry, then derive the package root from it.
 // Can't use require.resolve(".../package.json") because the exports field
@@ -80,7 +80,7 @@ export default function (pi: ExtensionAPI) {
         );
 
         // Copy URL to clipboard
-        const url = BASE_URL + "/" + filename;
+        const url = `${BASE_URL}/${filename}`;
         execSync("pbcopy", { input: url });
 
         ctx.ui.notify("Session exported: " + url + " (copied to clipboard)", "info");

@@ -1,2 +1,3 @@
 [[ "$ENV_MODE" == "home" ]] || return
-# Home environment config
+
+export STATIC_URL="http://localhost:3141"
