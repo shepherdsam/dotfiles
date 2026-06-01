@@ -72,6 +72,13 @@ ZSH_CUSTOM="$HOME/.config/zsh"
 # Add wisely, as too many plugins slow down shell startup.
 plugins=(git vi-mode)
 
+# Detect environment based on hostname
+if [[ "$(hostname)" == "shepherdsam.local" ]]; then
+  ENV_MODE="home"
+else
+  ENV_MODE="work"
+fi
+
 source $ZSH/oh-my-zsh.sh
 
 # Compilation flags

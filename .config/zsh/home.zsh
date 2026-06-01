@@ -1,1 +1,2 @@
-# Configuration for my personal setup
+[[ "$ENV_MODE" == "home" ]] || return
+# Home environment config
