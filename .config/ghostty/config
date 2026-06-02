@@ -16,4 +16,8 @@ background-opacity = 0.95
 macos-titlebar-style = hidden
 
 # Theme (managed by bin/theme script - do not edit directly)
+
+# Hyperlink behavior with tmux:
+# tmux mouse on + Ghostty shell integration means Ghostty intercepts Shift+Cmd+Click
+# for hyperlinks, sending plain Cmd+Click to tmux. Use Shift+Cmd+Click inside tmux.
 theme = one_dark
