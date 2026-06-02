@@ -1,8 +1,8 @@
 /**
  * Export Session Extension
  *
- * Exports the current pi session as HTML to ~/serv/static/public/ and copies
- * the public URL to the clipboard.
+ * Exports the current pi session as HTML and uploads it via HTTP PUT to a
+ * local server, then copies the public URL to the clipboard.
  *
  * Usage:
  *   /exportsession       Export current session
@@ -12,14 +12,9 @@ import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { createRequire } from "node:module";
 import { execSync } from "node:child_process";
 import path from "node:path";
-import fs from "node:fs";
 
-const OUTPUT_DIR = path.resolve(process.env.HOME || "~", "serv/static/public");
 const BASE_URL = (process.env.STATIC_URL || "http://localhost:3141").replace(/\/$/, "");
 
-// Resolve the main entry, then derive the package root from it.
-// Can't use require.resolve(".../package.json") because the exports field
-// restricts accessible paths, causing Node to treat dist/index.js as a directory.
 const mainEntry = require.resolve("@earendil-works/pi-coding-agent");
 const pkgRoot = path.dirname(path.dirname(mainEntry));
 const pkgRequire = createRequire(path.join(pkgRoot, "dist", "index.js"));
@@ -40,9 +35,6 @@ export default function (pi: ExtensionAPI) {
         return;
       }
 
-      // Ensure output directory exists
-      fs.mkdirSync(OUTPUT_DIR, { recursive: true });
-
       // Extract UUID from the session filename
       const basename = path.basename(sessionFile).replace(".jsonl", "");
       const parts = basename.split("_");
@@ -59,7 +51,7 @@ export default function (pi: ExtensionAPI) {
       const ms = String(now.getMilliseconds()).padStart(3, "0");
       const ts = `${year}-${month}-${day}T${hours}-${mins}-${secs}-${ms}Z`;
       const filename = `pi-session-${ts}_${uuid}.html`;
-      const outputPath = path.join(OUTPUT_DIR, filename);
+      const tmpPath = path.join("/tmp", filename);
 
       try {
         ctx.ui.notify("Exporting session...", "info");
@@ -76,11 +68,23 @@ export default function (pi: ExtensionAPI) {
         await exportSessionToHtml(
           ctx.sessionManager as any,
           state as any,
-          { outputPath }
+          { outputPath: tmpPath }
         );
 
-        // Copy URL to clipboard
+        // Upload via HTTP PUT
         const url = `${BASE_URL}/${filename}`;
+        const curlCmd = `curl -s -o /dev/null -w "%{http_code}" -X PUT --data-binary @${tmpPath} ${url}`;
+        const httpCode = execSync(curlCmd).toString().trim();
+        const code = parseInt(httpCode, 10);
+
+        if (code !== 201 && code !== 204) {
+          const msg = `Upload failed: HTTP ${httpCode}`;
+          console.error(msg);
+          ctx.ui.notify(msg, "error");
+          return;
+        }
+
+        // Copy URL to clipboard
         execSync("pbcopy", { input: url });
 
         ctx.ui.notify("Session exported: " + url + " (copied to clipboard)", "info");
