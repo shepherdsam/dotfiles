@@ -7,9 +7,9 @@ description: Upload a file to the static file server via PUT and copy the public
 
 Uploads files to a static file server via `curl PUT` and copies the resulting URL to clipboard.
 
-## Base URL
+## Static URL
 
-`http://localhost:3141` (override via `BASE_URL` env var). The same URL is used for both upload and the clipboard link.
+`http://dev-tools-service-static-server.tail5d98d.ts.net` (override via `STATIC_URL` env var). The same URL is used for both upload and the clipboard link.
 
 ## Upload helper
 
@@ -19,7 +19,7 @@ A shared `upload_and_clipboard` function handles the curl call and response chec
 upload_and_clipboard() {
   local file_path="$1"
   local filename="$2"
-  local base_url="${BASE_URL:-http://localhost:3141}"
+  local base_url="${STATIC_URL:-http://dev-tools-service-static-server.tail5d98d.ts.net}"
   local url="$base_url/$filename"
 
   local http_code
