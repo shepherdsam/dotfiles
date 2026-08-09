@@ -1,0 +1,211 @@
+#!/usr/bin/env bash
+# tmux-save - Snapshot tmux sessions (names, windows, pane cwd + split dir, focus)
+#
+# Usage:
+#   tmux-save              Write rolling snapshot "last"
+#   tmux-save NAME         Write/overwrite named pin
+#   tmux-save --auto       Write "last" only if older than 15 minutes (for status bar)
+#   tmux-save --list       List snapshots
+#   tmux-save --delete NAME
+#   tmux-save --delete last --force
+
+set -euo pipefail
+
+LIB="${HOME}/.config/tmux/session-lib.sh"
+# shellcheck source=/dev/null
+source "$LIB"
+
+usage() {
+  cat <<'EOF'
+tmux-save - snapshot tmux session layout (structure + cwd, not programs)
+
+Usage:
+  tmux-save                 Save to "last"
+  tmux-save NAME            Save named pin (silent overwrite)
+  tmux-save --auto          Save "last" if stale (>= 15m); for tmux status hook
+  tmux-save --list          List snapshots
+  tmux-save --delete NAME   Delete a named pin
+  tmux-save --delete last --force
+  tmux-save -h | --help
+EOF
+}
+
+list_snapshots() {
+  ensure_snapshot_dir
+  if ! compgen -G "${SNAPSHOT_DIR}/*" >/dev/null 2>&1; then
+    echo "No snapshots in $SNAPSHOT_DIR"
+    return 0
+  fi
+  # name  mtime  size
+  for f in "$SNAPSHOT_DIR"/*; do
+    [[ -f "$f" ]] || continue
+    local base mtime
+    base="$(basename -- "$f")"
+    if stat -f '%Sm' -t '%Y-%m-%d %H:%M' "$f" >/dev/null 2>&1; then
+      mtime="$(stat -f '%Sm' -t '%Y-%m-%d %H:%M' "$f")"
+    else
+      mtime="$(stat -c '%y' "$f" 2>/dev/null | cut -c1-16)"
+    fi
+    printf '%-20s  %s\n' "$base" "$mtime"
+  done | sort
+}
+
+delete_snapshot() {
+  local name="$1"
+  local force="${2:-}"
+  local path
+  path="$(snapshot_path "$name")"
+  name="$(basename -- "$name")"
+
+  if [[ "$name" == "last" && "$force" != "--force" ]]; then
+    echo "Refusing to delete rolling snapshot 'last' without --force" >&2
+    exit 1
+  fi
+  if [[ ! -f "$path" ]]; then
+    echo "No snapshot: $name" >&2
+    exit 1
+  fi
+  rm -f "$path"
+  echo "Deleted snapshot: $name"
+}
+
+# Infer split direction for pane relative to previous pane in the same window.
+# h = side-by-side (same top), v = stacked (same left). Default h.
+infer_dir() {
+  local prev_left="$1" prev_top="$2" left="$3" top="$4"
+  if [[ "$top" == "$prev_top" && "$left" != "$prev_left" ]]; then
+    echo h
+  elif [[ "$left" == "$prev_left" && "$top" != "$prev_top" ]]; then
+    echo v
+  else
+    # Fallback: prefer horizontal (matches this machine's usual layout)
+    echo h
+  fi
+}
+
+write_snapshot() {
+  local out="$1"
+  local tmp
+  tmp="$(mktemp "${TMPDIR:-/tmp}/tmux-save.XXXXXX")"
+
+  if ! any_sessions; then
+    rm -f "$tmp"
+    echo "No tmux sessions to save" >&2
+    exit 1
+  fi
+
+  {
+    echo "version ${SNAPSHOT_VERSION}"
+    echo "saved $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+
+    local session act_win act_pane
+    while IFS= read -r session; do
+      [[ -z "$session" ]] && continue
+
+      act_win="$(tmux display-message -t "$session:" -p '#{window_index}' 2>/dev/null || echo 0)"
+      act_pane="$(tmux display-message -t "$session:" -p '#{pane_index}' 2>/dev/null || echo 0)"
+      printf 'session %s %s %s\n' "$session" "$act_win" "$act_pane"
+
+      # Windows in index order
+      local widx wname
+      while IFS=$'\t' read -r widx wname; do
+        [[ -z "${widx:-}" ]] && continue
+        printf 'window %s %s %s\n' "$session" "$widx" "$wname"
+
+        local pidx path left top first=1 prev_left="" prev_top="" dir
+        while IFS=$'\t' read -r pidx path left top; do
+          [[ -z "${pidx:-}" ]] && continue
+          if [[ "$first" -eq 1 ]]; then
+            dir="-"
+            first=0
+          else
+            dir="$(infer_dir "$prev_left" "$prev_top" "$left" "$top")"
+          fi
+          prev_left="$left"
+          prev_top="$top"
+          # path last so spaces are OK
+          printf 'pane %s %s %s %s %s\n' "$session" "$widx" "$pidx" "$dir" "$path"
+        done < <(tmux list-panes -t "${session}:${widx}" -F $'#{pane_index}\t#{pane_current_path}\t#{pane_left}\t#{pane_top}' 2>/dev/null | sort -n)
+      done < <(tmux list-windows -t "$session" -F $'#{window_index}\t#{window_name}' 2>/dev/null | sort -n)
+    done < <(tmux list-sessions -F '#{session_name}' 2>/dev/null)
+  } >"$tmp"
+
+  ensure_snapshot_dir
+  mv -f "$tmp" "$out"
+}
+
+main() {
+  local auto=0
+  local name="last"
+
+  case "${1:-}" in
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    --list)
+      list_snapshots
+      exit 0
+      ;;
+    --delete)
+      shift
+      local del_name="${1:-}"
+      local force="${2:-}"
+      if [[ -z "$del_name" ]]; then
+        echo "Usage: tmux-save --delete NAME [--force]" >&2
+        exit 1
+      fi
+      delete_snapshot "$del_name" "$force"
+      exit 0
+      ;;
+    --auto)
+      auto=1
+      name="last"
+      ;;
+    "")
+      name="last"
+      ;;
+    -*)
+      echo "Unknown option: $1" >&2
+      usage >&2
+      exit 1
+      ;;
+    *)
+      name="$1"
+      ;;
+  esac
+
+  if ! command -v tmux >/dev/null 2>&1; then
+    echo "tmux not found" >&2
+    exit 1
+  fi
+
+  # --auto: no server or fresh snapshot → quiet no-op
+  if [[ "$auto" -eq 1 ]]; then
+    if ! any_sessions; then
+      exit 0
+    fi
+    local path
+    path="$(snapshot_path last)"
+    if [[ -f "$path" ]]; then
+      local now mtime age
+      now="$(date +%s)"
+      if mtime="$(stat -f '%m' "$path" 2>/dev/null)" || mtime="$(stat -c '%Y' "$path" 2>/dev/null)"; then
+        age=$((now - mtime))
+        if [[ "$age" -lt "$AUTO_SAVE_SECONDS" ]]; then
+          exit 0
+        fi
+      fi
+    fi
+  fi
+
+  local out
+  out="$(snapshot_path "$name")"
+  write_snapshot "$out"
+
+  if [[ "$auto" -eq 0 ]]; then
+    echo "Saved tmux snapshot: $(basename -- "$out")"
+  fi
+}
+
+main "$@"

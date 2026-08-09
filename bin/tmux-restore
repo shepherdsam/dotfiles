@@ -1,0 +1,290 @@
+#!/usr/bin/env bash
+# tmux-restore - Recreate missing tmux sessions from a snapshot (fill-missing)
+# Compatible with macOS system bash 3.2 (no associative arrays).
+#
+# Usage:
+#   tmux-restore           Restore from "last"
+#   tmux-restore NAME      Restore from named pin
+#   tmux-restore --list    List snapshots
+
+set -euo pipefail
+
+LIB="${HOME}/.config/tmux/session-lib.sh"
+# shellcheck source=/dev/null
+source "$LIB"
+
+usage() {
+  cat <<'EOF'
+tmux-restore - recreate missing sessions from a snapshot
+
+Usage:
+  tmux-restore             Restore from "last" (fill-missing)
+  tmux-restore NAME        Restore from named pin
+  tmux-restore --list      List snapshots
+  tmux-restore -h | --help
+
+Only creates sessions that do not already exist. Live sessions are never modified.
+EOF
+}
+
+list_snapshots() {
+  ensure_snapshot_dir
+  if ! compgen -G "${SNAPSHOT_DIR}/*" >/dev/null 2>&1; then
+    echo "No snapshots in $SNAPSHOT_DIR"
+    return 0
+  fi
+  for f in "$SNAPSHOT_DIR"/*; do
+    [[ -f "$f" ]] || continue
+    base="$(basename -- "$f")"
+    if stat -f '%Sm' -t '%Y-%m-%d %H:%M' "$f" >/dev/null 2>&1; then
+      mtime="$(stat -f '%Sm' -t '%Y-%m-%d %H:%M' "$f")"
+    else
+      mtime="$(stat -c '%y' "$f" 2>/dev/null | cut -c1-16)"
+    fi
+    printf '%-20s  %s\n' "$base" "$mtime"
+  done | sort
+}
+
+_cur_session=""
+_act_win=0
+_act_pane=0
+_created=0
+_skipped=0
+_warn=0
+_building=0
+# Parallel lists: saved window indices and live window indices (bash 3.2 friendly)
+_map_saved=""
+_map_live=""
+
+win_map_clear() {
+  _map_saved=""
+  _map_live=""
+}
+
+win_map_set() {
+  local saved="$1" live="$2"
+  _map_saved="${_map_saved}${_map_saved:+ }${saved}"
+  _map_live="${_map_live}${_map_live:+ }${live}"
+}
+
+win_map_get() {
+  local want="$1" s l
+  set -- $_map_saved
+  local saved_list="$*"
+  set -- $_map_live
+  local live_list="$*"
+  # Walk both lists in lockstep
+  local i=0
+  for s in $saved_list; do
+    i=$((i + 1))
+    l="$(echo "$live_list" | awk -v n="$i" '{ print $n }')"
+    if [[ "$s" == "$want" ]]; then
+      echo "$l"
+      return 0
+    fi
+  done
+  return 1
+}
+
+flush_focus() {
+  if [[ "$_building" -ne 1 || -z "$_cur_session" ]]; then
+    return 0
+  fi
+  if ! session_exists "$_cur_session"; then
+    return 0
+  fi
+  local live_win
+  live_win="$(win_map_get "$_act_win" 2>/dev/null || true)"
+  if [[ -z "$live_win" ]]; then
+    live_win="$_act_win"
+  fi
+  tmux select-window -t "${_cur_session}:${live_win}" 2>/dev/null || true
+  tmux select-pane -t "${_cur_session}:${live_win}.${_act_pane}" 2>/dev/null || true
+}
+
+create_window_with_pane() {
+  local session="$1" saved_widx="$2" wname="$3" path="$4"
+  local live_widx
+
+  if ! session_exists "$session"; then
+    if ! tmux new-session -d -s "$session" -n "$wname" -c "$path"; then
+      echo "error: failed to create session $session" >&2
+      _building=0
+      return 1
+    fi
+    _created=$((_created + 1))
+    echo "created session: $session"
+  else
+    tmux new-window -t "${session}:" -n "$wname" -c "$path"
+  fi
+
+  live_widx="$(tmux display-message -t "${session}:" -p '#{window_index}')"
+  win_map_set "$saved_widx" "$live_widx"
+  return 0
+}
+
+add_split() {
+  local session="$1" live_widx="$2" dir="$3" path="$4"
+  local split_flag="-h"
+  local layout="even-horizontal"
+
+  if [[ "$dir" == "v" ]]; then
+    split_flag="-v"
+    layout="even-vertical"
+  fi
+
+  tmux split-window -t "${session}:${live_widx}" "$split_flag" -c "$path"
+  tmux select-layout -t "${session}:${live_widx}" "$layout" 2>/dev/null || \
+    tmux select-layout -t "${session}:${live_widx}" tiled 2>/dev/null || true
+}
+
+# Print field N (1-based). If rest_from is set, print fields from that index to EOL joined by space.
+field_n() {
+  local line="$1"
+  local n="$2"
+  echo "$line" | awk -v n="$n" '{ print $n }'
+}
+
+field_rest() {
+  local line="$1"
+  local start="$2"
+  echo "$line" | awk -v start="$start" '{
+    if (NF < start) { print ""; exit }
+    for (i = start; i <= NF; i++) {
+      printf "%s%s", (i > start ? OFS : ""), $i
+    }
+    print ""
+  }'
+}
+
+restore_from_file() {
+  local file="$1"
+  if [[ ! -f "$file" ]]; then
+    echo "Snapshot not found: $file" >&2
+    exit 1
+  fi
+
+  _cur_session=""
+  _created=0
+  _skipped=0
+  _warn=0
+  _building=0
+  win_map_clear
+
+  local pending_session="" pending_widx="" pending_wname=""
+  local kind sname aw ap wsession widx wname
+  local psession pwidx ppidx pdir ppath resolved live_widx
+
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    [[ -z "$line" || "$line" == \#* ]] && continue
+
+    kind="$(field_n "$line" 1)"
+    case "$kind" in
+      version|saved)
+        continue
+        ;;
+      session)
+        flush_focus
+        sname="$(field_n "$line" 2)"
+        aw="$(field_n "$line" 3)"
+        ap="$(field_n "$line" 4)"
+        aw="${aw:-0}"
+        ap="${ap:-0}"
+
+        _cur_session="$sname"
+        _act_win="$aw"
+        _act_pane="$ap"
+        pending_session=""
+        win_map_clear
+
+        if session_exists "$sname"; then
+          echo "skip session (exists): $sname"
+          _skipped=$((_skipped + 1))
+          _building=0
+        else
+          _building=1
+        fi
+        ;;
+      window)
+        if [[ "$_building" -ne 1 ]]; then
+          continue
+        fi
+        pending_session="$(field_n "$line" 2)"
+        pending_widx="$(field_n "$line" 3)"
+        pending_wname="$(field_rest "$line" 4)"
+        ;;
+      pane)
+        if [[ "$_building" -ne 1 ]]; then
+          continue
+        fi
+        psession="$(field_n "$line" 2)"
+        pwidx="$(field_n "$line" 3)"
+        ppidx="$(field_n "$line" 4)"
+        pdir="$(field_n "$line" 5)"
+        ppath="$(field_rest "$line" 6)"
+
+        if [[ -d "$ppath" ]]; then
+          resolved="$ppath"
+        else
+          resolved="$HOME"
+          _warn=$((_warn + 1))
+          echo "warn: ${psession}:${pwidx}.${ppidx} path missing → $resolved  (was: $ppath)" >&2
+        fi
+
+        if [[ -n "$pending_session" && "$pending_session" == "$psession" && "$pending_widx" == "$pwidx" ]]; then
+          if ! create_window_with_pane "$psession" "$pwidx" "$pending_wname" "$resolved"; then
+            _building=0
+            pending_session=""
+            continue
+          fi
+          pending_session=""
+          continue
+        fi
+
+        if [[ "$pdir" != "-" && "$ppidx" != "0" ]]; then
+          live_widx="$(win_map_get "$pwidx" 2>/dev/null || true)"
+          if [[ -z "$live_widx" ]]; then
+            live_widx="$(tmux display-message -t "${psession}:" -p '#{window_index}')"
+          fi
+          add_split "$psession" "$live_widx" "$pdir" "$resolved"
+        fi
+        ;;
+      *)
+        echo "warn: unknown snapshot line: $line" >&2
+        ;;
+    esac
+  done <"$file"
+
+  flush_focus
+  echo "Restore done: created=${_created} skipped=${_skipped} path_warnings=${_warn}"
+}
+
+main() {
+  case "${1:-}" in
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    --list)
+      list_snapshots
+      exit 0
+      ;;
+    -*)
+      echo "Unknown option: $1" >&2
+      usage >&2
+      exit 1
+      ;;
+  esac
+
+  if ! command -v tmux >/dev/null 2>&1; then
+    echo "tmux not found" >&2
+    exit 1
+  fi
+
+  local name="${1:-last}"
+  local file
+  file="$(snapshot_path "$name")"
+  restore_from_file "$file"
+}
+
+main "$@"

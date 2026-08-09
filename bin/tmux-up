@@ -1,0 +1,81 @@
+#!/usr/bin/env bash
+# tmux-up - Enter tmux: attach if sessions exist, else restore then attach
+#
+# Policy:
+#   - Any live session → attach only (prefer "main", else MRU)
+#   - No sessions → tmux-restore from "last", then attach
+#   - No sessions and no snapshot → create bare "main"
+
+set -euo pipefail
+
+LIB="${HOME}/.config/tmux/session-lib.sh"
+# shellcheck source=/dev/null
+source "$LIB"
+
+usage() {
+  cat <<'EOF'
+tmux-up - attach to tmux, restoring from snapshot on cold start
+
+Usage:
+  tmux-up              Attach or restore+attach
+  tmux-up -h | --help
+EOF
+}
+
+main() {
+  case "${1:-}" in
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    "")
+      ;;
+    *)
+      echo "Unknown argument: $1" >&2
+      usage >&2
+      exit 1
+      ;;
+  esac
+
+  if ! command -v tmux >/dev/null 2>&1; then
+    echo "tmux not found" >&2
+    exit 1
+  fi
+
+  # Already inside tmux — nothing to do
+  if [[ -n "${TMUX:-}" ]]; then
+    echo "Already inside tmux" >&2
+    exit 0
+  fi
+
+  if any_sessions; then
+    attach_preferred
+    exit 0
+  fi
+
+  local last
+  last="$(snapshot_path last)"
+  if [[ -f "$last" ]]; then
+    # Fill-missing restore (nothing live, so full recreate)
+    if command -v tmux-restore >/dev/null 2>&1; then
+      tmux-restore last || true
+    elif [[ -x "${HOME}/bin/tmux-restore" ]]; then
+      "${HOME}/bin/tmux-restore" last || true
+    else
+      # Same dir as this script (dotfiles checkout / pre-install)
+      local self_dir
+      self_dir="$(cd "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+      if [[ -x "${self_dir}/tmux-restore" ]]; then
+        "${self_dir}/tmux-restore" last || true
+      fi
+    fi
+  fi
+
+  if ! any_sessions; then
+    tmux new-session -d -s main
+  fi
+
+  attach_preferred
+}
+
+main "$@"

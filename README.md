@@ -202,10 +202,20 @@ brew install ripgrep fd
 ### Tmux
 ```bash
 brew install tmux
-cp ./.tmux.conf ~/.tmux.conf
+# config lives at .config/tmux/ (linked by install.sh)
 ```
 
-See `./.tmux.conf`
+Session resume (structure + cwd, not running programs):
+
+| Command | Purpose |
+|---------|---------|
+| `tmux-save` / `tmux-save NAME` | Snapshot sessions → `~/.local/state/tmux/snapshots/` |
+| `tmux-restore` / `tmux-restore NAME` | Recreate **missing** sessions from a snapshot |
+| `tmux-up` | Attach if live; else restore `last` then attach (used by shell auto-start) |
+
+- Auto-save of `last` every 15 minutes (throttled inside `tmux-save --auto`)
+- Manual save: tmux `prefix + S`
+- See `.config/tmux/tmux.conf` and `bin/tmux-{save,restore,up}`
 
 ### Handy
 Dictation

@@ -27,12 +27,13 @@ alias tn='tmux new -s'          # e.g. tn work
 alias tk='tmux kill-session -t' # e.g. tk old-session
 alias tkillall='tmux kill-server' # nuclear option
 
-# Auto tmux
-if [[ -z "$TMUX" ]]; then
-  if tmux has-session 2>/dev/null; then
-    tmux attach
-  else
-    tmux new-session -s main
+# Auto tmux: attach if sessions exist, else restore snapshot then attach
+# (see ~/bin/tmux-up, ~/bin/tmux-save, ~/bin/tmux-restore)
+if [[ -z "$TMUX" ]] && [[ -o interactive ]]; then
+  if command -v tmux-up >/dev/null 2>&1; then
+    tmux-up
+  elif [[ -x "$HOME/bin/tmux-up" ]]; then
+    "$HOME/bin/tmux-up"
   fi
 fi
 
