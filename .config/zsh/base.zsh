@@ -18,7 +18,7 @@ else
   export EDITOR="nvim"
 fi
  
-alias nv="nvim"
+alias n="nvim"
 
 # tmux helpers
 alias tls='tmux ls'
@@ -29,13 +29,13 @@ alias tkillall='tmux kill-server' # nuclear option
 
 # Auto tmux: attach if sessions exist, else restore snapshot then attach
 # (see ~/bin/tmux-up, ~/bin/tmux-save, ~/bin/tmux-restore)
-if [[ -z "$TMUX" ]] && [[ -o interactive ]]; then
-  if command -v tmux-up >/dev/null 2>&1; then
-    tmux-up
-  elif [[ -x "$HOME/bin/tmux-up" ]]; then
-    "$HOME/bin/tmux-up"
-  fi
-fi
+# if [[ -z "$TMUX" ]] && [[ -o interactive ]]; then
+#   if command -v tmux-up >/dev/null 2>&1; then
+#     tmux-up
+#   elif [[ -x "$HOME/bin/tmux-up" ]]; then
+#     "$HOME/bin/tmux-up"
+#   fi
+# fi
 
 # Theme switcher convenience aliases (provided by ~/bin/theme after install)
 alias dark='theme dark'

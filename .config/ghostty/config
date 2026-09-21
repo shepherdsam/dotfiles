@@ -21,3 +21,9 @@ macos-titlebar-style = hidden
 # tmux mouse on + Ghostty shell integration means Ghostty intercepts Shift+Cmd+Click
 # for hyperlinks, sending plain Cmd+Click to tmux. Use Shift+Cmd+Click inside tmux.
 theme = one_dark
+
+# Let herdr (tmux-style keybinds) receive Option+Left/Right for tab navigation.
+# Ghostty defaults bind these to esc:b / esc:f (backward/forward-word), which
+# swallows the real modifier-arrow chords herdr's next_tab/previous_tab expects.
+keybind = alt+left=unbind
+keybind = alt+right=unbind
