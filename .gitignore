@@ -28,3 +28,4 @@
 **/password*
 
 /.config/zsh/auth.zsh
+.config/nvim/lazy-lock.json
