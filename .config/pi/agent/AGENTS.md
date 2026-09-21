@@ -23,6 +23,7 @@
 - When reading a file in full, do not use `offset` or `limit`.
 - Use `rg` (ripgrep) instead of `grep` for searching.
 - Use `fd` instead of `find` for file searching.
+- Write scripts in TypeScript and run them with `npx tsx` (use Node's built-in `fetch`; avoid Python or plain JS for new scripts).
 
 ## Behavior
 - Do NOT start implementing, designing, or modifying code unless explicitly asked
@@ -37,3 +38,6 @@
 - No paragraph intros like "The punchline:", "The kicker:", "Here's the thing:", "Bottom line:" - these are LLM slop
 - Be direct and technical
 
+## Slack MCP Instructions
+- Do not write or post without explicit confirmation from the user.
+- When drafting a Slack message in Sam's voice, read `/Users/samshe/.config/pi/agent/personality.md` and match it.
