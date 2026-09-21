@@ -104,3 +104,5 @@ autoload -Uz compinit && compinit -C
 
 # opencode
 export PATH=/Users/samshe/.opencode/bin:$PATH
+export PATH="/opt/homebrew/opt/libpq/bin:$PATH"
+export PATH="$HOME/.local/bin:$PATH"
